@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+
+  app:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+    restart: always
+    ports:
+      - '0.0.0.0:8999:5000'
+    environment:
+      LDAP_SERVER: '127.0.0.1'
+      LDAP_DN: 'ou=users, dc=somedc, dc=ru'
+      SECRET_KEY: 'secret'
+      REDIS_HOST: 'redis'
+      REDIS_PORT: 6379
+      KUBE_API_KEY: 'key'
+      KUBE_ENDPOINT: 'https://127.0.0.1'
+    volumes:
+      - ./app:/app
+      - ./ca.pem:/app/ca.pem
+
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
