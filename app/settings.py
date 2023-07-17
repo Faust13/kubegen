@@ -1,5 +1,6 @@
 import os
-
+# Как выяснилось, в питоне модно и молодежно использовать двойные кавычки, а не одинарные,
+# лучше везде поменять.
 LDAP = {
     "SERVER" : os.environ.get('LDAP_SERVER', '127.0.0.1').strip(),
     "DN" : os.environ.get('LDAP_DN', 'dc=example,dc=org').strip()
@@ -16,5 +17,18 @@ KUBERNETES = {
 }
 SALT = os.environ.get('SALT', 'somestring')
 BASIC_AUTH_USER = os.environ.get('BASIC_AUTH_USER', 'admin') 
+
+
+# это все можно сделать покрасивше, через pydantic-settings.
+# https://docs.pydantic.dev/latest/usage/pydantic_settings/
+class LDAPSettings(BaseSettings):
+    server: str = "127.0.0.1"
+    dn: str = "dc=example,dc=org"
+
+
+class RedisSettings(BaseSettings):
+    host: str = Field("127.0.0.1", validation_alias="REDIS_HOST")
+    port: int = Field(6379, validation_alias="REDIS_PORT")
+
 
 #LOG_FORMAT = os.environ.get('LOG_FORMAT', '')
