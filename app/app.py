@@ -35,13 +35,20 @@ logging.basicConfig(level=logging.INFO)
 logging.basicConfig(format='%(process)d-%(levelname)s-%(message)s')
 
 logging.debug(kube_conf.host, kube_conf.api_key)
+# выглядит секурно
 logging.info(f"BASIC AUTH PASSWORD IS { (app.config['BASIC_AUTH_KEY']) }")
 
-API = "http://127.0.0.1:5000/api/v1/"
+API = "http://127.0.0.1:5000/api/v1/"  # это похоже на то, что это переменная окружения
+# слишком длинно
+# можно сделать константой (ну и в отдельном файле все константы собрать)
 api_headers = {
-                'accept': 'application/json',
-                'Authorization': 'Basic %s' % base64.b64encode((f"{ app.config['BASIC_AUTH_USER'] } : { app.config['BASIC_AUTH_KEY'] }").encode()).decode()
-            }
+    'accept': 'application/json',
+    # нужно определиться, используем ли мы %s или f
+    # encode.decode. возможно что-то идет не так.
+    # слишком сложно, я бы засунул в функцию, если не получится упросить.
+    'Authorization': 'Basic %s' % base64.b64encode((f"{ app.config['BASIC_AUTH_USER'] } : { app.config['BASIC_AUTH_KEY'] }").encode()).decode()
+}
+
 
 def verify_password(header):
     try:
@@ -69,20 +76,24 @@ def index():
             return redirect(url_for('loginOptions'))
 
 @app.route('/auth')
-def loginOptions():
+def loginOptions(): # snake_case
     return render_template('login_options.html')
 
 @app.route('/login', methods=['GET', 'POST'])
-def loginForm():
+def loginForm():  # snake_case
     error = None
     if request.method == 'POST':
+            # вообще я бы посоветовал попробовать marshmallow
+            # https://marshmallow.readthedocs.io/en/stable/
+            # там можно сделать payload schema и валидировать данные
             form_username = str(request.form['username'])
             form_password = str(request.form['password'])
             request_body = {"username" : form_username, "password" : form_password}
+            # так как тут идет вызов http, для оптимизации можно завезти асинхронщину
             check_ldap = requests.post(API + 'login', json=request_body, headers=api_headers)
             if check_ldap.ok:
                 data = check_ldap.json()
-                if data['code'] == 200:
+                if data['code'] == 200:  # а если нет?)
                     session['user'] = data['username']
                     return redirect(url_for('kubeConfig'))
             else:
@@ -90,7 +101,7 @@ def loginForm():
     return render_template('login_form.html', error=error)
 
 @app.route('/kubeconfig', methods=['POST', 'GET'])
-def kubeConfig():
+def kubeConfig(): # snake_case
         if request.method == 'GET':
             if 'user' in session:
                 username = session['user']
@@ -101,9 +112,11 @@ def kubeConfig():
                     ca_data = base64.b64encode((response_dict['ca.crt']).encode()).decode()
                     username = response_dict['namespace'] 
                     token = response_dict['token']
+                    # лучше в конфиг, чтобы не переписывать кодец
                     service_account = 'default'
                     cluster_name = 'yc-managed-k8s'
                     kube_endpoint = kube_conf.host 
+                    # слищком длинно
                     return render_template('kubeconfig.html', username=username,cluster_name=cluster_name, ca_data=ca_data, token=token, service_account=service_account, kube_endpoint=kube_endpoint)
             else:
                 abort(403)
@@ -114,7 +127,7 @@ def kubeConfig():
 
 #### API ####
 @app.route('/api/v1/login', methods=['POST'])
-def apiLogin():
+def apiLogin():  # snake_case
     auth_header = request.headers.get('Authorization')
     logging.debug(auth_header)
     auth = verify_password(auth_header)
@@ -126,14 +139,14 @@ def apiLogin():
     result = global_ldap_authentication(username, password)
     try:
         session['user'] = json.loads(result[0].get_data(as_text=False))['username']
-    except:
+    except:  # нельзя пустой except
         abort(403)
 
     logging.debug(session['user'])
     return result
 
 @app.route('/api/v1/kubeconf', methods=['POST'])
-def apiKubeconf():
+def apiKubeconf():  # snake_case
     auth_header = request.headers.get('Authorization')
     logging.debug(auth_header)
     auth = verify_password(auth_header)
@@ -142,7 +155,7 @@ def apiKubeconf():
         username = request.json.get('username')
         responce = getKubeConf(kube_conf, username)
         return responce
-    except KeyError:
+    except KeyError:  # ну ведь умеешь же)
         abort(403) # Unautorized
 
 
